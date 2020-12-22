@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:feedinstagramclone/models/post_model.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 
 class Posts with ChangeNotifier {
@@ -12,16 +12,17 @@ class Posts with ChangeNotifier {
     this._posts.clear();
     var posts = await FirebaseFirestore.instance.collection('posts').get();
     posts.docs.forEach(
-      (element) {
+      (post) {
         _posts.add(
           Post(
-            name: element["name"],
-            icon: element["icon"],
-            imageSRC: element["imageSRC"],
-            legend: element["legend"],
-            date: (element["date"] as Timestamp).toDate(),
-            curtidas: element["curtidas"],
-            uid: element["uid"],
+            name: post["name"],
+            icon: post["icon"],
+            imageSRC: post["imageSRC"],
+            legend: post["legend"],
+            date: (post["date"] as Timestamp).toDate(),
+            curtidas: post["curtidas"],
+            uid: post["uid"],
+            userUID: post["userUID"],
           ),
         );
       },
@@ -31,6 +32,22 @@ class Posts with ChangeNotifier {
       return d1DepoisD2 ? -1 : 1;
     });
     notifyListeners();
+  }
+
+  void deletePost(Post post, String uid) async {
+    var toDeletePost = FirebaseFirestore.instance.collection("posts").doc(post.uid);
+    var deletePostProperties = await toDeletePost.get();
+    var imageURL = deletePostProperties["imageSRC"];
+    var userUID = deletePostProperties["userUID"];
+
+    if (!(userUID == uid)) {
+      return;
+    } else {
+      await toDeletePost.delete();
+      await FirebaseStorage.instance.refFromURL(imageURL).delete();
+
+      getNetPosts();
+    }
   }
 
   void changeCurtiu(Post rpost, String uid) async {
@@ -50,7 +67,7 @@ class Posts with ChangeNotifier {
     getNetPosts();
   }
 
-  void addPost(Post post) async {
+  void addPost(Post post, String userUID) async {
     FirebaseFirestore fbi = FirebaseFirestore.instance;
     var posts = fbi.collection("posts");
     var res = await posts.add({
@@ -59,7 +76,8 @@ class Posts with ChangeNotifier {
       "imageSRC": post.imageSRC,
       "legend": post.legend,
       "date": post.date,
-      "curtidas": []
+      "userUID": userUID,
+      "curtidas": [],
     });
     if (res.id == null) {
       return;
@@ -71,6 +89,7 @@ class Posts with ChangeNotifier {
       legend: post.legend,
       date: post.date,
       uid: res.id,
+      userUID: userUID,
       curtidas: [],
     );
     _posts.add(p);

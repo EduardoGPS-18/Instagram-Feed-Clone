@@ -5,6 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+//FIXME: Arrumar a apresentação do tempo (Há x tempo atrás!)!
+
 class PostWidget extends StatefulWidget {
   final Post post;
 
@@ -15,6 +17,51 @@ class PostWidget extends StatefulWidget {
 }
 
 class _PostWidgetState extends State<PostWidget> {
+  Future<bool> showConfirmDialog(BuildContext context, {Widget content}) async {
+    var res = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        content: content,
+        actions: [
+          FlatButton(
+            child: Text(
+              "Confirmar",
+              style: TextStyle(color: Colors.black),
+            ),
+            onPressed: () {
+              Navigator.of(context).pop(true);
+            },
+          ),
+          FlatButton(
+            child: Text(
+              "Cancelar",
+              style: TextStyle(color: Colors.black),
+            ),
+            onPressed: () {
+              Navigator.of(context).pop(false);
+            },
+          )
+        ],
+      ),
+    );
+    return res;
+  }
+
+  Future<void> deletePost() async {
+    var res = await this.showConfirmDialog(
+      context,
+      content: Text("Deseja apagar mesmo?"),
+    );
+    if (res) {
+      Provider.of<Posts>(context, listen: false).deletePost(
+        widget.post,
+        FirebaseAuth.instance.currentUser.uid,
+      );
+    } else {
+      return;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     var curUserCurtiu = this
@@ -53,10 +100,22 @@ class _PostWidgetState extends State<PostWidget> {
                     ),
                   ),
                 ),
-                IconButton(
-                  icon: Icon(Icons.more_vert),
-                  onPressed: () {},
-                ),
+                if (FirebaseAuth.instance.currentUser.uid == widget.post.userUID)
+                  DropdownButton(
+                    underline: Container(),
+                    icon: Icon(Icons.more_vert),
+                    items: [
+                      DropdownMenuItem<String>(
+                        child: Text("Excluir"),
+                        value: "Excluir",
+                      ),
+                    ],
+                    onChanged: (value) async {
+                      if (value == "Excluir") {
+                        deletePost();
+                      }
+                    },
+                  ),
               ],
             ),
           ),
@@ -142,8 +201,23 @@ class _PostWidgetState extends State<PostWidget> {
                     top: 8,
                     left: 10,
                   ),
-                  child: Text(
-                    "Hora : " + MyUtils.formatDateTimeHHMMSS(widget.post.date),
+                  child: Row(
+                    children: [
+                      Text(
+                        "Hora : ",
+                        style: TextStyle(
+                          color: Colors.grey[400],
+                          fontWeight: FontWeight.w300,
+                        ),
+                      ),
+                      Text(
+                        "${MyUtils.formatDateTimeHHMMSS(widget.post.date)} (Há ${MyUtils.getTime(widget.post.date)})",
+                        style: TextStyle(
+                          color: Colors.grey[500],
+                          fontWeight: FontWeight.w200,
+                        ),
+                      ),
+                    ],
                   ),
                 )
               ],

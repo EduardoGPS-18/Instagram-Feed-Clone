@@ -1,7 +1,12 @@
+import 'dart:io';
+import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:feedinstagramclone/routes.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 class AuthScreen extends StatefulWidget {
   @override
@@ -19,11 +24,35 @@ class _AuthScreenState extends State<AuthScreen> {
 
   TextEditingController _passwordController = TextEditingController();
 
+  File _image;
+
   bool _isSignup = false;
   bool _hidePassword = false;
 
+  bool activeButtonConfirm = true;
+
   void _submitFunction() async {
-    _formKey.currentState.validate();
+    setState(() {
+      activeButtonConfirm = false;
+    });
+    if (!_formKey.currentState.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("Valide os campos por favor!!"),
+        backgroundColor: Colors.red,
+      ));
+      setState(() {
+        activeButtonConfirm = true;
+      });
+      return;
+    } else if (_image == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("Adicione um icone por favor!"),
+        backgroundColor: Colors.red,
+      ));
+      setState(() {
+        activeButtonConfirm = true;
+      });
+    }
     if (_isSignup) {
       FirebaseAuth fbauth = FirebaseAuth.instance;
       var res;
@@ -32,10 +61,22 @@ class _AuthScreenState extends State<AuthScreen> {
           email: _emailController.text,
           password: _passwordController.text,
         );
-        FirebaseFirestore fbstore = FirebaseFirestore.instance;
+        var fbstore = FirebaseFirestore.instance;
+        var curUser = FirebaseAuth.instance.currentUser;
+        var fileUploaded = await FirebaseStorage.instance
+            .ref(
+              curUser.uid +
+                  "/images/" +
+                  "icon/" +
+                  Random.secure().nextDouble().toString().replaceAll(".", "") +
+                  Random.secure().nextDouble().toString().replaceAll(".", ""),
+            )
+            .putFile(_image);
+        var iconPath = await fileUploaded.ref.getDownloadURL();
         fbstore.collection("users").add({
           "username": _nameController.text,
           "uid": res.user.uid,
+          "icon": iconPath,
         });
       } catch (err) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -60,6 +101,7 @@ class _AuthScreenState extends State<AuthScreen> {
         );
       }
     }
+
     if (FirebaseAuth.instance.currentUser != null) {
       Navigator.pushReplacementNamed(context, Routes.MAIN_SCREEN);
     }
@@ -71,7 +113,7 @@ class _AuthScreenState extends State<AuthScreen> {
       body: Center(
         child: SingleChildScrollView(
           child: Container(
-            height: 500,
+            height: this._isSignup ? 700 : 400,
             width: double.infinity,
             child: Form(
               autovalidateMode: AutovalidateMode.disabled,
@@ -85,15 +127,37 @@ class _AuthScreenState extends State<AuthScreen> {
                       children: [
                         Text(
                           "Instagram",
-                          style:
-                              TextStyle(fontSize: 46, fontFamily: "monospace"),
+                          style: TextStyle(fontSize: 46, fontFamily: "monospace"),
                         ),
                         Text(
                           "ou melhor clone dele....",
-                          style: TextStyle(color: Colors.grey[500]),
+                          style: TextStyle(color: Colors.grey[300]),
                         ),
                       ],
                     ),
+                    if (_isSignup)
+                      FlatButton(
+                        child: Text("Que tal tirar a primeira foto?"),
+                        onPressed: () async {
+                          PickedFile img = await ImagePicker().getImage(
+                            source: ImageSource.camera,
+                            maxHeight: 300,
+                            maxWidth: 300,
+                          );
+                          setState(() {
+                            _image = File(img.path);
+                          });
+                        },
+                      ),
+                    if (_isSignup)
+                      Container(
+                        height: 100,
+                        width: 100,
+                        child: _image != null ? Image.file(File(_image.path)) : Image.network("https://picsum.photos/300/300"),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(50),
+                        ),
+                      ),
                     if (_isSignup)
                       TextFormField(
                         validator: (name) {
@@ -119,9 +183,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                     TextFormField(
                       validator: (email) {
-                        if (!email.contains("@") ||
-                            email.length < 7 ||
-                            email.isEmpty) {
+                        if (!email.contains("@") || email.length < 7 || email.isEmpty) {
                           return "Email invalido, tente novamente com outro email!";
                         }
                         return null;
@@ -161,8 +223,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         border: InputBorder.none,
                         hintText: "Digite sua senha: ",
                         enabledBorder: InputBorder.none,
-                        icon: Icon(Icons.vpn_key,
-                            color: Theme.of(context).iconTheme.color),
+                        icon: Icon(Icons.vpn_key, color: Theme.of(context).iconTheme.color),
                       ),
                       obscureText: _hidePassword,
                       autocorrect: false,
@@ -172,7 +233,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         validator: (confirmPassword) {
                           if (confirmPassword != _passwordController.text) {
                             return "Senha diferente da confirmação de senha!";
-                          } else if(confirmPassword.isEmpty || confirmPassword == null){
+                          } else if (confirmPassword.isEmpty || confirmPassword == null) {
                             return "Senha vazia!";
                           }
                           return null;
@@ -196,7 +257,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                     FlatButton(
                       child: Text(_isSignup ? "Confirmar Registro" : "Entrar"),
-                      onPressed: _submitFunction,
+                      onPressed: activeButtonConfirm ? _submitFunction : null,
                     ),
                     FlatButton(
                       child: Text(
