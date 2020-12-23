@@ -29,7 +29,7 @@ class _PostWidgetState extends State<PostWidget> {
               style: TextStyle(color: Colors.black),
             ),
             onPressed: () {
-              Navigator.of(context).pop(true);
+              Navigator.of(context).pop<bool>(true);
             },
           ),
           FlatButton(
@@ -38,7 +38,7 @@ class _PostWidgetState extends State<PostWidget> {
               style: TextStyle(color: Colors.black),
             ),
             onPressed: () {
-              Navigator.of(context).pop(false);
+              Navigator.of(context).pop<bool>(false);
             },
           )
         ],
