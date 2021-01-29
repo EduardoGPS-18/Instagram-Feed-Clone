@@ -1,4 +1,4 @@
-# feedinstagramclone
+# Instagram Feed Clone
 
 A new Flutter project.
 
