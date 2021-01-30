@@ -1,11 +1,8 @@
+import 'package:feedinstagramclone/controllers/post_widget_controller.dart';
 import 'package:feedinstagramclone/models/post_model.dart';
-import 'package:feedinstagramclone/providers/posts.dart';
 import 'package:feedinstagramclone/utils/format.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-//FIXME: Arrumar a apresentação do tempo (Há x tempo atrás!)!
 
 class PostWidget extends StatefulWidget {
   final Post post;
@@ -17,6 +14,8 @@ class PostWidget extends StatefulWidget {
 }
 
 class _PostWidgetState extends State<PostWidget> {
+  PostWidgetController _controller;
+
   Future<bool> showConfirmDialog(BuildContext context, {Widget content}) async {
     var res = await showDialog<bool>(
       context: context,
@@ -53,26 +52,21 @@ class _PostWidgetState extends State<PostWidget> {
       content: Text("Deseja apagar mesmo?"),
     );
     if (res) {
-      Provider.of<Posts>(context, listen: false).deletePost(
-        widget.post,
-        FirebaseAuth.instance.currentUser.uid,
-      );
+      _controller.deletePost(context, widget);
     } else {
       return;
     }
   }
 
   @override
+  void initState() {
+    _controller = PostWidgetController();
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    var curUserCurtiu = this
-        .widget
-        .post
-        .curtidas
-        .where((element) {
-          return element == FirebaseAuth.instance.currentUser.uid;
-        })
-        .toList()
-        .isNotEmpty;
+    var curUserCurtiu = this.widget.post.curtidas.where((element) => element == FirebaseAuth.instance.currentUser.uid).toList().isNotEmpty;
     return Container(
       margin: EdgeInsets.symmetric(vertical: 12),
       width: double.infinity,
@@ -140,12 +134,7 @@ class _PostWidgetState extends State<PostWidget> {
                     color: curUserCurtiu ? Colors.red : Colors.black,
                     size: 32,
                   ),
-                  onPressed: () {
-                    Provider.of<Posts>(context, listen: false).changeCurtiu(
-                      this.widget.post,
-                      FirebaseAuth.instance.currentUser.uid,
-                    );
-                  },
+                  onPressed: () => _controller.changeLike(context, widget),
                 ),
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 8),

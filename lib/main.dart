@@ -1,4 +1,5 @@
 import 'package:feedinstagramclone/providers/posts.dart';
+import 'package:feedinstagramclone/providers/user.dart';
 import 'package:feedinstagramclone/routes.dart';
 import 'package:feedinstagramclone/screens/add_post_screen.dart';
 import 'package:feedinstagramclone/screens/auth_screen.dart';
@@ -26,8 +27,12 @@ class MyApp extends StatelessWidget {
             ChangeNotifierProvider(
               create: (_) => Posts(),
             ),
+            ChangeNotifierProvider(
+              create: (_) => CurrentUser(),
+            ),
           ],
           child: MaterialApp(
+            debugShowCheckedModeBanner: false,
             title: 'Flutter Demo',
             theme: ThemeData(
               primaryColor: Colors.white,
@@ -35,9 +40,7 @@ class MyApp extends StatelessWidget {
                 color: Colors.black,
               ),
             ),
-            initialRoute: FirebaseAuth.instance.currentUser == null
-                ? Routes.AUTH_SCREEN
-                : Routes.MAIN_SCREEN,
+            initialRoute: FirebaseAuth.instance.currentUser == null ? Routes.AUTH_SCREEN : Routes.MAIN_SCREEN,
             routes: {
               Routes.AUTH_SCREEN: (ctx) => AuthScreen(),
               Routes.MAIN_SCREEN: (ctx) => FeedScreen(),

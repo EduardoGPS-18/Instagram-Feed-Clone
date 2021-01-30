@@ -9,6 +9,7 @@ class MyUtils {
 
   static String getTime(DateTime date) {
     var diference = DateTime.now().difference(date);
+
     if (diference.inSeconds < 60) {
       return "${diference.inSeconds} segundo" + ((diference.inSeconds == 1) ? "" : "s");
     } else if (diference.inMinutes < 60) {
@@ -24,5 +25,6 @@ class MyUtils {
     } else if (diference.inDays / (366) > 1) {
       return "${diference.inDays ~/ (366)} ano" + ((diference.inDays / (366) > 1 ? "s" : ""));
     }
+    return "Invalid Time!";
   }
 }

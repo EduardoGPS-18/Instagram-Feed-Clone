@@ -1,4 +1,5 @@
 import 'package:feedinstagramclone/providers/posts.dart';
+import 'package:feedinstagramclone/providers/user.dart';
 import 'package:feedinstagramclone/routes.dart';
 import 'package:feedinstagramclone/widgets/post_widget.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -14,6 +15,7 @@ class FeedScreen extends StatefulWidget {
 
 class _FeedScreenState extends State<FeedScreen> {
   RefreshController _ptrc = RefreshController();
+  int _currentIndex = 0;
   @override
   Widget build(BuildContext context) {
     Provider.of<Posts>(context, listen: false).getNetPosts();
@@ -28,14 +30,14 @@ class _FeedScreenState extends State<FeedScreen> {
           elevation: 0,
           title: Text("Instagram"),
           actions: [
-            IconButton(
-              icon: Icon(Icons.exit_to_app),
-              onPressed: () {
-                FirebaseAuth.instance.signOut();
-                Navigator.of(context).pushReplacementNamed(Routes.AUTH_SCREEN);
-                setState(() {});
-              },
-            ),
+            // IconButton(
+            //   icon: Icon(Icons.exit_to_app),
+            //   onPressed: () {
+            //     FirebaseAuth.instance.signOut();
+            //     Navigator.of(context).pushReplacementNamed(Routes.AUTH_SCREEN);
+            //     setState(() {});
+            //   },
+            // ),
             IconButton(
               icon: Icon(
                 Icons.add_box_outlined,
@@ -65,15 +67,67 @@ class _FeedScreenState extends State<FeedScreen> {
             ),
           ],
         ),
-        body: Consumer<Posts>(
-          builder: (_, postProvider, child) => ListView.builder(
-            itemCount: postProvider.posts.length,
-            itemBuilder: (ctx, i) {
-              return PostWidget(
-                post: postProvider.posts[i],
-              );
-            },
-          ),
+        body: Column(
+          children: [
+            Flexible(
+              flex: 10,
+              child: Consumer<Posts>(
+                builder: (_, postProvider, child) => ListView.builder(
+                  itemCount: postProvider.posts.length,
+                  itemBuilder: (ctx, i) {
+                    return PostWidget(
+                      post: postProvider.posts[i],
+                    );
+                  },
+                ),
+              ),
+            ),
+            Flexible(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      Icons.home,
+                      size: 32,
+                    ),
+                    onPressed: () {},
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.search,
+                      size: 32,
+                    ),
+                    onPressed: () {},
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.new_releases_outlined,
+                      size: 32,
+                    ),
+                    onPressed: () {},
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.shopping_bag_outlined,
+                      size: 32,
+                    ),
+                    onPressed: () {},
+                  ),
+                  FutureBuilder(
+                    future: Provider.of<CurrentUser>(context).getCurUser(),
+                    builder: (context, snapshot) {
+                      return snapshot.connectionState == ConnectionState.waiting
+                          ? CircularProgressIndicator()
+                          : CircleAvatar(
+                              backgroundImage: NetworkImage(Provider.of<CurrentUser>(context).linkIcon),
+                            );
+                    },
+                  )
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

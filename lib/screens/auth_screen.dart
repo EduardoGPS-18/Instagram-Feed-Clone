@@ -1,10 +1,5 @@
 import 'dart:io';
-import 'dart:math';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:feedinstagramclone/routes.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import '../controllers/auth_screen_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -15,13 +10,13 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> {
   GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
   UniqueKey _nameKey = UniqueKey();
   TextEditingController _nameController = TextEditingController();
   TextEditingController _emailController = TextEditingController();
 
   UniqueKey _confirmPasswordKey = UniqueKey();
   TextEditingController _confirmPassword = TextEditingController();
-
   TextEditingController _passwordController = TextEditingController();
 
   File _image;
@@ -31,80 +26,29 @@ class _AuthScreenState extends State<AuthScreen> {
 
   bool activeButtonConfirm = true;
 
-  void _submitFunction() async {
-    setState(() {
-      activeButtonConfirm = false;
-    });
+  AuthScreenController _authScreenController;
+
+  @override
+  void initState() {
+    super.initState();
+    _authScreenController = AuthScreenController();
+  }
+
+  bool validateForm() {
     if (!_formKey.currentState.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text("Valide os campos por favor!!"),
         backgroundColor: Colors.red,
       ));
-      setState(() {
-        activeButtonConfirm = true;
-      });
-      return;
-    } else if (_image == null) {
+      return false;
+    } else if (_image == null && _isSignup) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text("Adicione um icone por favor!"),
         backgroundColor: Colors.red,
       ));
-      setState(() {
-        activeButtonConfirm = true;
-      });
+      return false;
     }
-    if (_isSignup) {
-      FirebaseAuth fbauth = FirebaseAuth.instance;
-      var res;
-      try {
-        res = await fbauth.createUserWithEmailAndPassword(
-          email: _emailController.text,
-          password: _passwordController.text,
-        );
-        var fbstore = FirebaseFirestore.instance;
-        var curUser = FirebaseAuth.instance.currentUser;
-        var fileUploaded = await FirebaseStorage.instance
-            .ref(
-              curUser.uid +
-                  "/images/" +
-                  "icon/" +
-                  Random.secure().nextDouble().toString().replaceAll(".", "") +
-                  Random.secure().nextDouble().toString().replaceAll(".", ""),
-            )
-            .putFile(_image);
-        var iconPath = await fileUploaded.ref.getDownloadURL();
-        fbstore.collection("users").add({
-          "username": _nameController.text,
-          "uid": res.user.uid,
-          "icon": iconPath,
-        });
-      } catch (err) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            duration: Duration(seconds: 3),
-            content: Text("Houve um erro!"),
-          ),
-        );
-      }
-    } else {
-      try {
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: _emailController.text,
-          password: _passwordController.text,
-        );
-      } catch (err) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            duration: Duration(seconds: 5),
-            content: Text("Houve um erro!"),
-          ),
-        );
-      }
-    }
-
-    if (FirebaseAuth.instance.currentUser != null) {
-      Navigator.pushReplacementNamed(context, Routes.MAIN_SCREEN);
-    }
+    return true;
   }
 
   @override
@@ -257,7 +201,29 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                     FlatButton(
                       child: Text(_isSignup ? "Confirmar Registro" : "Entrar"),
-                      onPressed: activeButtonConfirm ? _submitFunction : null,
+                      onPressed: activeButtonConfirm
+                          ? () async {
+                              if (!validateForm()) {
+                                return;
+                              }
+                              try {
+                                var res = await _authScreenController.submitFunction(
+                                  context,
+                                  _emailController.text,
+                                  _passwordController.text,
+                                  _isSignup,
+                                );
+                                if (res.user != null) {
+                                  Navigator.pushReplacementNamed(context, "/");
+                                }
+                              } catch (err) {
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                  content: Text("Nome ou senha invalida!!!"),
+                                  backgroundColor: Colors.red,
+                                ));
+                              }
+                            }
+                          : null,
                     ),
                     FlatButton(
                       child: Text(

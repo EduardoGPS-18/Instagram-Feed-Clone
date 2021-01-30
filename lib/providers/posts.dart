@@ -9,7 +9,8 @@ class Posts with ChangeNotifier {
   get posts => [..._posts];
 
   Future<void> getNetPosts() async {
-    this._posts.clear();
+    _posts.clear();
+
     var posts = await FirebaseFirestore.instance.collection('posts').get();
     posts.docs.forEach(
       (post) {
@@ -27,10 +28,7 @@ class Posts with ChangeNotifier {
         );
       },
     );
-    _posts.sort((post1, post2) {
-      var d1DepoisD2 = post1.date.isAfter(post2.date);
-      return d1DepoisD2 ? -1 : 1;
-    });
+    _posts.sort((post1, post2) => post1.date.isAfter(post2.date) ? -1 : 1);
     notifyListeners();
   }
 
@@ -50,7 +48,7 @@ class Posts with ChangeNotifier {
     }
   }
 
-  void changeCurtiu(Post rpost, String uid) async {
+  void changeLike(Post rpost, String uid) async {
     var post = FirebaseFirestore.instance.collection('posts').doc(rpost.uid);
     var res = await post.get();
     List initialCurts = res.data()["curtidas"];
@@ -68,8 +66,8 @@ class Posts with ChangeNotifier {
   }
 
   void addPost(Post post, String userUID) async {
-    FirebaseFirestore fbi = FirebaseFirestore.instance;
-    var posts = fbi.collection("posts");
+    FirebaseFirestore fbinstance = FirebaseFirestore.instance;
+    var posts = fbinstance.collection("posts");
     var res = await posts.add({
       "name": post.name,
       "icon": post.icon,
